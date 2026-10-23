@@ -1,0 +1,74 @@
+{
+  "metrics": {
+    "revenue": {
+      "canonical": "net_revenue",
+      "synonyms": ["revenue", "sales", "turnover", "total sales", "net revenue", "earnings", "collections"],
+      "definition": "Quantity * Unit_price - Discount_amount for Completed orders with Quantity > 0 and Unit_price not null.",
+      "formula": "(Quantity * Unit_price) - Discount_amount"
+    },
+    "gross_revenue": {
+      "canonical": "gross_revenue",
+      "synonyms": ["gross revenue", "gross sales", "total value before discount"],
+      "definition": "Quantity * Unit_price before subtracting discounts.",
+      "formula": "Quantity * Unit_price"
+    },
+    "average_order_value": {
+      "canonical": "aov",
+      "synonyms": ["aov", "average order value", "average revenue per order", "mean order value", "order average"],
+      "definition": "Total net revenue divided by total completed order count.",
+      "formula": "SUM(net_revenue) / COUNT(Transaction_Id)"
+    },
+    "units": {
+      "canonical": "quantity",
+      "synonyms": ["units", "volume", "quantity", "number of items", "pieces sold", "units sold"],
+      "definition": "Physical count of units ordered.",
+      "formula": "SUM(Quantity)"
+    },
+    "returns": {
+      "canonical": "returns_value",
+      "synonyms": ["returns", "refunds", "returned orders", "return rate", "returned value"],
+      "definition": "Orders marked with Status = 'Returned'. Quarantined from default revenue metrics.",
+      "formula": "SUM(gross_revenue) WHERE Status = 'Returned'"
+    },
+    "discount": {
+      "canonical": "discount_impact",
+      "synonyms": ["discount", "discounts", "discount given", "discount percentage", "discount impact"],
+      "definition": "Monetary reduction granted on orders.",
+      "formula": "(SUM(Discount_amount) / SUM(gross_revenue)) * 100"
+    }
+  },
+  "entities": {
+    "products": {
+      "Monitor": ["monitor", "screen", "display"],
+      "Desk": ["desk", "standing desk", "table", "workstation"],
+      "Office Chair": ["chair", "office chair", "ergonomic chair", "seating"],
+      "USB-C Hub": ["hub", "usb hub", "usb-c", "adapter", "usb"],
+      "Wireless Mouse": ["mouse", "wireless mouse", "mice"],
+      "Keyboard": ["keyboard", "mechanical keyboard", "keys"],
+      "Laptop Stand": ["laptop stand", "stand", "riser"]
+    },
+    "regions": {
+      "North": ["north", "northern"],
+      "South": ["south", "southern"],
+      "East": ["east", "eastern"],
+      "West": ["west", "western"]
+    },
+    "categories": {
+      "Accessories": ["accessories", "accessory"],
+      "Electronics": ["electronics", "tech", "electronic"],
+      "Furniture": ["furniture", "office furniture", "furnishings"]
+    },
+    "channels": {
+      "Online": ["online", "web", "website", "ecommerce", "e-commerce"],
+      "Retail": ["retail", "store", "offline", "physical store", "shop"]
+    },
+    "months": {
+      "2026-01": ["jan", "january", "first month"],
+      "2026-02": ["feb", "february"],
+      "2026-03": ["mar", "march"],
+      "2026-04": ["apr", "april"],
+      "2026-05": ["may"],
+      "2026-06": ["jun", "june", "last month", "latest month"]
+    }
+  }
+}

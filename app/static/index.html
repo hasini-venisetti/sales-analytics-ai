@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ask-the-Numbers · Trustworthy AI Business Intelligence</title>
+  <meta name="description" content="Ask sales questions in plain English. Get verified, auditable answers backed by parameterized SQL and dual-engine cross-checking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Particle Canvas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <div class="container">
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-logo">₹</div>
+        <div class="brand-text">
+          <h1>Ask-the-Numbers</h1>
+          <p>Trustworthy AI · Business Intelligence · Audit-Ready Answers</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span id="modeBadge" class="pill pill-emerald">⬤ Rule-Based Engine</span>
+        <span id="healthBadge" class="pill pill-blue">Loading data…</span>
+        <button id="btnToggleDQ" class="btn-action btn-action-ghost">📊 Data Audit</button>
+        <button id="btnBreakItDemo" class="btn-action btn-action-danger">🛡️ Break-It Demo</button>
+      </div>
+    </header>
+
+    <!-- ═══ KPI GRID ═══ -->
+    <section class="kpi-grid" id="kpiGrid">
+      <!-- Populated dynamically via /api/insights -->
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Loading...</span><div class="kpi-icon kpi-icon-blue">⟳</div></div>
+        <div class="kpi-value" style="opacity:0.3;">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Loading...</span><div class="kpi-icon kpi-icon-emerald">⟳</div></div>
+        <div class="kpi-value" style="opacity:0.3;">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Loading...</span><div class="kpi-icon kpi-icon-amber">⟳</div></div>
+        <div class="kpi-value" style="opacity:0.3;">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Loading...</span><div class="kpi-icon kpi-icon-purple">⟳</div></div>
+        <div class="kpi-value" style="opacity:0.3;">—</div>
+      </div>
+    </section>
+
+    <!-- ═══ BREAK-IT DEMO PANEL (Collapsible) ═══ -->
+    <section class="panel-section" id="breakItSection" style="border-color: rgba(239,68,68,0.25);">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <h3 style="color:#f87171;">🛡️ Live "Break-It" Red-Team Attack Battery</h3>
+          <span class="pill pill-emerald" id="breakItRateBadge">Ready</span>
+        </div>
+        <button class="btn-close-panel" id="btnCloseBreakIt" title="Close">×</button>
+      </div>
+      <div class="panel-body">
+        <p class="panel-desc">
+          Fires 5 realistic attack vectors (DROP TABLE, chained semicolons, comment injection, shadow columns, system-prompt jailbreaks)
+          and proves every payload is intercepted by the AST guard <em>before</em> database execution.
+        </p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Attack Vector</th>
+                <th>Simulated Payload</th>
+                <th>Defense Layer</th>
+                <th>Status</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody id="breakItTableBody">
+              <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-muted);">Press the button to fire the attack battery…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CHALLENGE SANDBOX PANEL (Collapsible) ═══ -->
+    <section class="panel-section" id="challengeSection" style="border-color: rgba(59,130,246,0.25);">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <h3 style="color:#60a5fa;">⚖️ Definition Sensitivity Sandbox</h3>
+          <span class="pill pill-emerald" id="challengeVerdictBadge">Awaiting…</span>
+        </div>
+        <button class="btn-close-panel" id="btnCloseChallenge" title="Close">×</button>
+      </div>
+      <div class="panel-body">
+        <p class="panel-desc">
+          Revenue is an accounting definition, not a physical constant. This sandbox stress-tests your answer across 4 alternative definitions:
+          <strong>Net</strong> · <strong>Gross</strong> · <strong>Returns Included</strong> · <strong>Price Imputation</strong>.
+        </p>
+        <div id="challengeVerdictText" class="verdict-box">Run a query, then click "Challenge this answer" to see sensitivity results.</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Definition / Scope</th>
+                <th>Total Revenue</th>
+                <th>Delta vs Default</th>
+                <th>Top Product</th>
+                <th>Top Region</th>
+                <th>Assumptions</th>
+              </tr>
+            </thead>
+            <tbody id="challengeTableBody">
+              <tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-muted);">No data yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ DATA QUALITY PANEL (Collapsible) ═══ -->
+    <section class="panel-section" id="dqSection">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <h3>📋 Data Quality &amp; Quarantine Report</h3>
+          <span class="pill pill-emerald" id="dqHygieneScore">Computing…</span>
+        </div>
+        <button class="btn-close-panel" id="btnCloseDQ" title="Close">×</button>
+      </div>
+      <div class="panel-body">
+        <p class="panel-desc">
+          Dirty or non-standard rows are quarantined into <code>sales_quarantine</code> and never silently imputed.
+          Default revenue queries target the verified view <code>v_sales_valid</code>.
+        </p>
+        <div style="display:flex;gap:28px;margin-bottom:18px;font-size:13px;flex-wrap:wrap;">
+          <div><strong>Total Loaded:</strong> <span id="dqLoaded">—</span> rows</div>
+          <div><strong>Clean Completed:</strong> <span id="dqValid">—</span> rows</div>
+          <div><strong>Quarantined:</strong> <span id="dqQuarantined">—</span> rows</div>
+          <div><strong>Date Range:</strong> <span id="dqDateRange">—</span></div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Txn ID</th>
+                <th>Quarantine Reason</th>
+                <th>Product</th>
+                <th>Audit Finding</th>
+              </tr>
+            </thead>
+            <tbody id="dqQuarantineTableBody">
+              <tr><td colspan="4" style="text-align:center;padding:28px;color:var(--text-muted);">Loading audit data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SEARCH CARD ═══ -->
+    <section class="search-card">
+      <div class="search-label">Ask a Business Question</div>
+
+      <div class="input-row">
+        <input
+          type="text"
+          id="queryInput"
+          class="query-input"
+          placeholder="e.g. 'Which product generated the highest revenue?' or 'How did March compare to April?'"
+          autocomplete="off"
+        />
+        <button id="btnAsk" class="btn-ask">
+          <span id="btnAskText">Ask →</span>
+          <span id="btnAskSpinner" class="spinner"></span>
+        </button>
+      </div>
+
+      <div class="chips-row">
+        <span class="chips-label">Try:</span>
+        <button class="chip" data-q="What is the total revenue?">Total Revenue</button>
+        <button class="chip" data-q="Which product has the highest revenue?">Top Product</button>
+        <button class="chip" data-q="Show monthly revenue trend">Monthly Trend</button>
+        <button class="chip" data-q="Which region has the highest sales?">Top Region</button>
+        <button class="chip" data-q="How did revenue change between March and April?">Mar vs Apr</button>
+        <button class="chip" data-q="Why did May revenue spike?">Why May Spiked</button>
+        <button class="chip" data-q="What is our average order value?">Avg Order Value</button>
+        <button class="chip" data-q="Show revenue by category">By Category</button>
+        <button class="chip" data-q="How many orders were returned?">Returns</button>
+        <button class="chip chip-danger" data-q="DROP TABLE sales;">Test Security</button>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="toggleReturned">
+          Include Returned Orders
+        </label>
+      </div>
+    </section>
+
+    <!-- ═══ ANSWER WORKSPACE ═══ -->
+    <section class="answer-container" id="answerContainer">
+
+      <!-- Answer Header -->
+      <div class="answer-header">
+        <div class="answer-status-row">
+          <div class="answer-badges">
+            <span id="statusBadge" class="pill pill-emerald">✅ Verified</span>
+            <span id="trustBadge" class="pill pill-blue" style="cursor:pointer;" title="Click for trust breakdown">Trust 96/100</span>
+            <span id="laneBadge" class="pill pill-electric">Lane A · Parameterized SQL</span>
+          </div>
+          <div class="answer-meta-right">
+            <button id="btnChallengeAnswer" class="btn-challenge">⚖️ Challenge this answer</button>
+            <span id="latencyBadge" class="latency-text">0 ms</span>
+          </div>
+        </div>
+        <div class="query-echo" id="queryLabel">"…"</div>
+        <div class="headline-answer" id="headlineAnswer">…</div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="chart">📊 Visualization</button>
+        <button class="tab-btn" data-tab="table">🗃️ Data Table</button>
+        <button class="tab-btn" data-tab="advisor">💡 Advisor</button>
+        <button class="tab-btn" data-tab="sql">⚙️ SQL &amp; Guard</button>
+        <button class="tab-btn" data-tab="proof">🔍 Proof &amp; Trust</button>
+      </div>
+
+      <!-- Tab 1: Chart -->
+      <div class="tab-content active" id="tab-chart">
+        <div class="chart-wrap">
+          <canvas id="analyticsChart"></canvas>
+          <div class="chart-empty" id="chartEmptyMessage">
+            <div class="chart-empty-icon">📉</div>
+            <div>This metric has no visual series. See <strong>Data Table</strong> or <strong>Proof</strong> tabs.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Table -->
+      <div class="tab-content" id="tab-table">
+        <div class="table-toolbar">
+          <button id="btnDownloadCSV" class="btn-download">⬇ Download CSV</button>
+        </div>
+        <div class="table-container">
+          <table id="resultsTable">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Advisor -->
+      <div class="tab-content" id="tab-advisor">
+        <div class="advisor-title" id="advisorHeadline">Strategic Briefing</div>
+        <div class="advisor-subtitle">Strict separation between database-verified facts and executive advisory recommendations.</div>
+        <div class="advisor-grid">
+          <div class="advisor-card" style="border-left:3px solid #10b981;">
+            <div class="advisor-card-title text-emerald">① Verified Facts</div>
+            <ul id="advisorFacts"><li>Loading…</li></ul>
+          </div>
+          <div class="advisor-card" style="border-left:3px solid #f59e0b;">
+            <div class="advisor-card-title text-amber">② Risks &amp; Trajectory</div>
+            <ul id="advisorRisks"><li>Analyzing…</li></ul>
+          </div>
+          <div class="advisor-card" style="border-left:3px solid #3b82f6;">
+            <div class="advisor-card-title text-blue">③ Recommendations</div>
+            <ul id="advisorActions"><li>Synthesizing…</li></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: SQL & Guard -->
+      <div class="tab-content" id="tab-sql">
+        <p class="sql-desc">Exact SQLite query executed on a read-only connection with AST allowlist inspection:</p>
+        <div class="code-box">
+          <button id="btnCopySQL" class="btn-copy">Copy</button>
+          <code id="sqlDisplay">-- SQL will appear here after a query</code>
+        </div>
+      </div>
+
+      <!-- Tab 5: Proof & Trust -->
+      <div class="tab-content" id="tab-proof">
+        <div class="trust-block">
+          <div class="trust-row">
+            <span class="trust-label">Trust Meter Breakdown</span>
+            <span id="proofTrustBadge" class="pill pill-blue">Trust Score: — / 100</span>
+          </div>
+          <div class="trust-headline" id="proofTrustHeadline">Verified by dual engines</div>
+          <div class="trust-factors" id="proofTrustFactors">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <div class="proof-grid">
+          <div class="proof-card">
+            <div class="proof-card-title">Calculation Formula</div>
+            <p><code id="proofFormula">—</code></p>
+          </div>
+          <div class="proof-card">
+            <div class="proof-card-title">Dual-Engine Verification</div>
+            <p id="proofVerifierMsg" style="color:var(--emerald-bright);font-weight:600;">—</p>
+          </div>
+          <div class="proof-card">
+            <div class="proof-card-title">Dataset Row Audit</div>
+            <p id="proofCounts">Used: — | Excluded: — | Returned: —</p>
+          </div>
+          <div class="proof-card">
+            <div class="proof-card-title">Business Scope Assumptions</div>
+            <ul id="proofAssumptions"><li>Completed orders only</li></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Follow-ups Strip -->
+      <div class="followups-strip">
+        <span class="followups-label">Suggested follow-ups:</span>
+        <div id="followupsContainer" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+    </section><!-- end answer-container -->
+
+  </div><!-- end .container -->
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
