@@ -32,9 +32,6 @@ flowchart TD
     DB --> X
 ```
 
-![Architecture diagram](images/09-architecture.png)
-*Add a screenshot of this diagram as rendered on GitHub.*
-
 ## Data layer
 
 **Source.** The file `data/ai_bi_assistant_sales_data_-_GET.csv` has 51 transactions between 3 January and 28 June 2026. It covers 7 products in 3 categories, 4 regions and 2 sales channels. Columns: Transaction_Id, Order_date, Product, Category, Region, Sales_channel, Quantity, Unit_price, Discount_amount, Status.
@@ -100,9 +97,6 @@ flowchart TD
 ![Blocked destructive request](images/13-blocked-attack.png)
 *A destructive request being refused.*
 
-![Unsupported question handled](images/14-refusal.png)
-*An unsupported question getting an explanation instead of a guess.*
-
 ## SQL guard (`app/core/guard.py`)
 
 Generated SQL is parsed with sqlglot and must pass all of these checks before it runs:
@@ -144,12 +138,6 @@ Users say "sales", "revenue" or "turnover" and mean the same thing. The glossary
 - `gemini.py` is used when `GEMINI_API_KEY` is set. The model name comes from `LLM_MODEL`.
 
 Both follow the same interface, so a different model provider can be added as one new file. If the model call fails, the app falls back to the rule-based interpreter instead of showing an error.
-
-![Zero-key mode](images/15-rule-based-mode.png)
-*The badge showing rule-based mode, with no API key set.*
-
-![Gemini mode](images/16-gemini-mode.png)
-*The badge showing Gemini mode, with a key set.*
 
 ## Backend (`app/api/`, `app/main.py`)
 

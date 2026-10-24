@@ -24,9 +24,6 @@ flowchart LR
     L --> CW[CloudWatch Logs]
 ```
 
-![AWS design diagram](images/17-aws-design.png)
-*Add a screenshot of this diagram as rendered on GitHub.*
-
 ## Services and what each one does here
 
 **S3** would hold the sales CSV. At startup the app would download it and build the SQLite database in memory or in `/tmp`, which is fine for a file this small. This needs a small change to the loader, because it currently reads from disk.
@@ -55,9 +52,6 @@ flowchart LR
 6. Create an API Gateway HTTP API that forwards all routes to the function.
 7. Open the API URL, check the page loads, and ask the five example questions.
 8. Check CloudWatch for errors.
-
-![Deployed app screenshot](images/18-aws-deployed.png)
-*Only add this if I actually deploy it. A screenshot of the app running on its AWS URL.*
 
 ## Things I would check before calling it production-ready
 
