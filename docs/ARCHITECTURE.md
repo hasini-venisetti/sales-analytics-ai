@@ -40,15 +40,15 @@ flowchart TD
 
 1. Reads the CSV. If the file is missing, it stops with a clear error. It never creates data.
 2. Parses `Order_date` explicitly as day-month-year (`%d-%m-%Y`). Without this, `03-01-2026` would be read as 1 March instead of 3 January. Dates are stored in ISO form, with a separate month column.
-3. Checks every row and sends it to the clean table or the quarantine table.
+3. Loads all 51 rows into the `sales` table, then checks every row and records the ones that fail in the quarantine table with a reason.
 
 **Tables and view**
 
 | Name | What it holds |
 |---|---|
-| `sales` | The 48 clean, completed rows |
-| `sales_quarantine` | The 3 problem rows, each with a reason |
-| `v_sales_valid` | The view all analytics read from |
+| `sales` | All 51 loaded rows, nothing deleted |
+| `sales_quarantine` | The 3 flagged rows, each with a reason |
+| `v_sales_valid` | The view all analytics read from: the 48 rows that are completed, have a quantity above zero and have a unit price |
 
 **Rows I set aside, and why**
 
@@ -58,12 +58,12 @@ flowchart TD
 | TXN0034 | 28-04-2026 | Quantity is 0 | Quarantined, because an order of zero units is not a real sale |
 | TXN0051 | 28-06-2026 | Unit_price is missing (Laptop Stand, quantity 5) | Quarantined. I did not guess a price, because any guess would silently change June's revenue |
 
-51 rows in, 48 clean plus 3 quarantined. Nothing is dropped without a record.
+51 rows in, 3 flagged, 48 used. Nothing is dropped without a record.
 
 **Revenue definition.** Net revenue = Quantity × Unit_price − Discount_amount, counted only for completed orders with a quantity above zero and a known price. On the 48 clean rows this gives ₹14,39,200. The file has no currency column, so I show amounts in rupees.
 
 ![Database check](images/10-database-check.png)
-*Screenshot of the database: row counts for sales and sales_quarantine, and the quarantine table contents.*
+*The database: 51 rows in `sales` and 3 in `sales_quarantine`.*
 
 ## How a question is handled
 
@@ -139,6 +139,10 @@ Users say "sales", "revenue" or "turnover" and mean the same thing. The glossary
 
 Both follow the same interface, so a different model provider can be added as one new file. If the model call fails, the app falls back to the rule-based interpreter instead of showing an error.
 
+## Trust score, challenge and Break-It demo
+
+Every answer gets a trust score out of 100 with a breakdown: whether two engines agreed, whether a certified query was used, how many rows were quarantined, and whether any value was imputed. The Challenge button shows the answer under more than one definition. The Break-It Demo sends attack-style requests and shows that each is blocked. The Advisor tab keeps verified facts, risks and recommendations in separate columns, and recommendations are suggestions based on the figures, not measured results.
+
 ## Backend (`app/api/`, `app/main.py`)
 
 FastAPI with Pydantic models for requests and responses. Errors use one consistent format and sensible status codes, and internal details are not exposed to the client.
@@ -151,12 +155,14 @@ A single page served by FastAPI at the root. It has a question box, example ques
 
 | File | What it covers |
 |---|---|
-| `test_etl.py` | Date parsing, quarantine rules, row counts |
+| `test_etl.py` | Date parsing, quarantine rules, row counts, missing file error |
 | `test_metrics_golden.py` | The verified figures: total, top product, top region, monthly series |
 | `test_router.py` | Question interpretation |
 | `test_guard_security.py` | Destructive SQL, injection attempts, unknown columns |
 | `test_drivers.py` | Change between months and what drove it |
-| `test_api.py` | Endpoints, responses, error handling |
+| `test_api.py` | Endpoints, responses, input limits, error handling |
+| `test_new_features.py` | Trust score, challenge feature, Break-It demo, advisor, and their endpoints |
+| `test_gemini_live.py` | Calls Gemini when a key is set, skipped otherwise |
 
 The golden figures in the tests are re-derived with Pandas rather than copied from the app.
 

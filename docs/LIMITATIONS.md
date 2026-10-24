@@ -20,7 +20,7 @@ I would rather be clear about what the project does not do than leave it for som
 | **Open-ended questions need a Gemini key.** Without one, only the standard question types are understood. | The rule-based interpreter recognises known shapes of question. It is reliable on those and cannot guess at new ones. |
 | **The cross-check is strongest for standard questions.** | I can recompute my own queries independently. For SQL written by the model I validate and show it, but I cannot independently recompute every possible query. |
 | **The model can misread a question.** | Language models sometimes do. That is why the interpretation is shown, the SQL is visible, and an unclear question is refused instead of guessed. |
-| **Advice-style questions are not answered.** For example, "which products should I improve to increase sales?" | The app reports and explains what the data shows. Recommendations need judgement the data alone does not support, and I did not have time to build and test it. |
+| **Advisor recommendations are suggestions, not results.** | They are drawn from the computed figures. The data has no cost or margin information, so they cannot say what would raise profit. |
 | **No forecasting.** | Six months of data cannot support a reliable prediction, so the app says so. |
 | **No cost, margin or customer data.** | The file has none, so questions about profit or customers cannot be answered. |
 | **Currency is assumed to be rupees.** | The file has no currency column. |
@@ -34,7 +34,7 @@ I would rather be clear about what the project does not do than leave it for som
 
 ## Testing limits
 
-The automated tests are designed to run without an API key, so they cover the rule-based path and the SQL guard. The live Gemini path needs a key and a connection, so it is checked by hand.
+The 36 automated tests run without an API key, so they cover the rule-based path, the SQL guard and the verified figures. One test calls Gemini only when a key is present and is skipped otherwise, so the live Gemini path is only exercised when I run it with a key.
 
 ## What I would do next
 

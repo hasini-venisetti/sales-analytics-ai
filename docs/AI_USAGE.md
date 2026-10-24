@@ -37,7 +37,6 @@ I did not start by asking the agent to build an app. I started with the data.
 - Add a GitHub Actions workflow so the tests run on every push.
 - Deploy the app to AWS and put a live link in the README. The design is in [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md), but it is not deployed.
 - Load the CSV from S3 instead of a local file.
-- Add questions that give advice, such as which products to focus on, using only figures computed from the data.
 - Offer an optional, clearly labelled estimate for the order with the missing price, instead of leaving it out entirely.
 - Test the Gemini path against a larger set of real questions and measure how often the SQL guard rejects a query.
 - Express the pipeline in LangGraph or Google ADK as a comparison with the plain Python version.
