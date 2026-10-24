@@ -1,57 +1,44 @@
-# AI Usage Disclosure & Engineering Log
+# How I Used AI
 
-> **Note for the Candidate:** This document is designed to be completely honest and transparent about how AI was used. Review each section, especially the marked `[EDIT ME: ...]` sections, and add your personal reflections and authentic voice before your interview.
+## Which AI tools I used
 
----
+- **Claude** for planning, for writing the detailed build instructions I gave to the coding agent, for reviewing the agent's plan and results, and for helping write these documents.
+- **Antigravity**, Google's agentic coding environment, running a Gemini Flash model. It generated the code and the tests.
+- **Gemini API** inside the application itself, as an optional model for open-ended questions. The app works without it.
+- **Pandas**, which I used to check the agent's numbers independently of the app.
 
-## 1. Which AI Tools I Used
+## How I used AI during development
 
-* **Google AI Studio / Gemini Models (gemini-3.8-flash):** Used as an interactive pair-programmer to plan architecture, verify math against the CSV, draft boilerplate FastAPI/Pydantic code, and generate unit tests.
-* **Modern `@google/genai` Python SDK:** Integrated into the application's Lane B (`app/llm/gemini.py`) to generate Text-to-SQL for open-ended queries.
-* *[EDIT ME: Mention any other AI tools you used, e.g. Claude, ChatGPT, GitHub Copilot, Cursor, etc. If none, write: "Only Google AI Studio & Gemini were used."]*
+I did not start by asking the agent to build an app. I started with the data.
 
----
+1. **Read the brief and profiled the CSV first.** Before any code, I loaded the file in Pandas and looked for problems. That is how I found the three rows that needed special handling: a returned order (TXN0033), an order with quantity 0 (TXN0034) and an order with no unit price (TXN0051). I also confirmed the dates are day-month-year.
+2. **Decided what the app should be.** I worked out what the company is evaluating (correct answers, safe handling of AI output, clear explanations) and chose a design around one rule: the AI never produces a number, the database does.
+3. **Wrote a detailed brief for the coding agent.** It covered the data problems, the revenue definition, the answers I expected, the safety rules, the tests and the documentation.
+4. **Asked the agent for a plan before any code.** I reviewed it and approved it with changes (below).
+5. **Let the agent build in milestones**, starting with data loading and the standard questions, then the API, the SQL guard, the driver analysis and the interface.
+6. **Reviewed the result** against the brief and checked the numbers myself.
 
-## 2. How I Used AI During Development
+## Problems I encountered
 
-* **Data Profiling & Mathematical Verification:**
-  - I used AI to inspect the 51-row dataset structure and verify edge cases:
-    - `TXN0033` (Returned status, ₹19,000 gross)
-    - `TXN0034` (Quantity = 0, invalid completed order)
-    - `TXN0051` (Missing `Unit_price`)
-  - We confirmed that excluding all 3 dirty/returned rows leaves exactly **48 clean completed rows**, producing a total net revenue of **₹14,39,200**.
-* **Architecture & Reliability Strategy:**
-  - Formulated the core thesis: *"The LLM never does arithmetic. It only classifies intent or drafts SQL. All math is performed by SQLite and cross-checked by an independent Pandas verifier."*
-  - Designed the 3-Lane router (Lane A: Deterministic templates; Lane B: Guarded Text-to-SQL; Lane C: Polite refusal).
-* **AST Security Guardrails:**
-  - Co-designed `SQLGuard` with `sqlglot` to parse incoming SQL into an Abstract Syntax Tree, enforcing single `SELECT` statements, row caps, and column/table allowlists.
-* *[EDIT ME: Add 1-2 sentences on how you specifically prompted the AI or guided the development workflow in your own words.]*
+1. **The plan included an extra Node server.** The agent proposed a Node/Express proxy for its preview environment. The task is a Python application, so I asked for it to be removed and for FastAPI to serve the page directly. A stray `package.json` also appeared and I removed it.
+2. **The plan would generate data if the CSV was missing.** I did not accept this. An app that invents sales data is worse than one that stops. It now loads the real file or exits with a clear error.
+3. **A mismatch in the number of valid rows.** My brief said 49 valid rows and the agent built 48. I traced it to my own count, which included the quantity-0 order. With the rule "completed, quantity above zero, price present", the correct number is 48. The revenue total is the same either way, because the zero-quantity order contributes nothing.
+4. **A rounded figure written as text.** The Monitor share of revenue appeared as 32.8%. The actual value is 32.87%, which rounds to 32.9%. I asked for percentages to be calculated in code and not typed into text.
 
----
+## How I debugged them
 
-## 3. Problems I Encountered
+- For each problem I compared the app's output with my own Pandas calculation on the raw CSV, and looked for where the two first disagreed.
+- For the row count, I listed the rows that fail each rule (3 in total, 1 returned, 1 with quantity 0, 1 with no price) and counted what was left: 51 minus 3 is 48.
+- For the percentage, I divided the Monitor total by the overall total (473,000 / 14,39,200) and compared it with what the page showed.
+- After each change I re-ran the test suite.
 
-* **The 49 vs 48 Row Trap:**
-  - My initial manual count assumed 49 valid rows. When auditing row-by-row in code, we discovered that `TXN0034` had `Quantity = 0`. Since our business filter enforces `Quantity > 0`, the correct clean completed row count is exactly 48 rows. The total revenue (₹14,39,200) was unaffected, but the row count needed correction.
-* **Model Deprecation During Integration:**
-  - When calling Gemini in Python, the older model alias returned a `404 NOT_FOUND` indicating it was retired. We updated the model to `gemini-3.8-flash`, which resolved the issue and produced fast, accurate SQL.
-* *[EDIT ME: Describe any other problem or unexpected behavior you ran into while testing or running the code locally.]*
+## What I would improve with another day of work
 
----
-
-## 4. How I Debugged Them
-
-* **Data Scope Alignment:**
-  - Audited the Pandas filter `df[(df['Status'] == 'Completed') & (df['Quantity'] > 0) & (df['Unit_price'].notna())]` and verified that 51 total rows minus 3 quarantined rows equals 48 rows. Updated all documentation and tests to reflect this exact baseline.
-* **Direct Model Verification:**
-  - Added an automated live test in `tests/test_gemini_live.py` that verifies `GeminiProvider` directly with `gemini-3.8-flash` and ensures output passes through `SQLGuard`.
-* *[EDIT ME: Add your personal debugging technique, e.g. "I ran pytest with -v flag", "I inspected the SQLite database directly", etc.]*
-
----
-
-## 5. What I'd Improve with Another Day
-
-* [ ] Add dynamic CSV file upload in the UI with automated schema profiling and quarantine logging.
-* [ ] Implement conversational multi-turn session persistence using SQLite or Redis.
-* [ ] Add automated webhook notifications (Slack/Teams) on anomaly detection or peak volume spikes.
-* *[EDIT ME: Add 1 thing you personally find exciting that you'd love to build if this were a production project.]*
+- Add a GitHub Actions workflow so the tests run on every push.
+- Deploy the app to AWS and put a live link in the README. The design is in [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md), but it is not deployed.
+- Load the CSV from S3 instead of a local file.
+- Add questions that give advice, such as which products to focus on, using only figures computed from the data.
+- Offer an optional, clearly labelled estimate for the order with the missing price, instead of leaving it out entirely.
+- Test the Gemini path against a larger set of real questions and measure how often the SQL guard rejects a query.
+- Express the pipeline in LangGraph or Google ADK as a comparison with the plain Python version.
+- Add authentication and rate limiting before any public use.

@@ -1,54 +1,67 @@
-# AWS Cloud Deployment Architecture (Designed & Lambda-Ready)
+# AWS Deployment
 
-This document outlines how **Ask-the-Numbers** is architected for seamless deployment to Amazon Web Services (AWS), aligning directly with the Graduate Engineer Trainee job description.
+## Where things stand
 
----
+The application runs locally. The repository contains a Lambda entry point (`lambda_handler.py`, which wraps the FastAPI app with Mangum) and a `Dockerfile`. I have **not deployed it to AWS**. This document describes how I would, and why each service fits.
 
-## 1. Serverless Architecture Overview
+| Item | Status |
+|---|---|
+| Runs locally | Done |
+| Lambda entry point | Written, not deployed |
+| Dockerfile | Written |
+| Loading the CSV from S3 | Not implemented, the app reads a local file |
+| Bedrock as a model provider | Not implemented |
 
+## How the pieces map to AWS
+
+```mermaid
+flowchart LR
+    U[User] --> APIGW[API Gateway]
+    APIGW --> L[Lambda: FastAPI via Mangum]
+    L --> S3[(S3: sales CSV)]
+    L --> SM[Secrets Manager: Gemini key]
+    L --> LLM[Gemini API or Amazon Bedrock]
+    L --> CW[CloudWatch Logs]
 ```
-                      +-------------------+
-                      |   Amazon S3       |
-                      | (Sales CSVs / DB) |
-                      +---------+---------+
-                                |
-                                v
-User Request ---> Amazon API Gateway ---> AWS Lambda (FastAPI + Mangum)
-                                                |
-                               +----------------+----------------+
-                               |                                 |
-                               v                                 v
-                     Amazon Bedrock / SageMaker       CloudWatch Logs & Metrics
-                     (LLM for Lane B SQL drafting)   (Structured Request Tracing)
-```
 
----
+![AWS design diagram](images/17-aws-design.png)
+*Add a screenshot of this diagram as rendered on GitHub.*
 
-## 2. Component Specifications
+## Services and what each one does here
 
-### A. Compute: AWS Lambda + Mangum (`lambda_handler.py`)
-* The entire FastAPI application is wrapped using `Mangum` (`lambda_handler.py`).
-* Runs as a containerized Lambda function using our provided `Dockerfile` or a Python 3.11 zip deployment package.
-* **Benefits:** Scale-to-zero cost efficiency, zero server maintenance, handles sudden traffic spikes automatically.
+**S3** would hold the sales CSV. At startup the app would download it and build the SQLite database in memory or in `/tmp`, which is fine for a file this small. This needs a small change to the loader, because it currently reads from disk.
 
-### B. Storage: Amazon S3
-* In a cloud workflow, raw sales data files are uploaded to an S3 bucket (e.g., `s3://company-bi-data/sales/`).
-* S3 Event Notifications trigger Lambda to execute the ETL pipeline (`app/data/etl.py`) to validate and rebuild the analytics database.
+**Lambda with API Gateway** runs the API without a server to manage. Mangum translates API Gateway requests into the form FastAPI expects, so the same app code runs locally and on Lambda. Each Lambda instance builds its own copy of the database, which works because the data is read-only.
 
-### C. LLM Backend: Amazon Bedrock or SageMaker
-* For enterprise compliance where external third-party API calls are restricted, the `LLMProvider` can connect directly to **Amazon Bedrock** (e.g. Claude 3.5 Sonnet / Amazon Titan) or an internal **Amazon SageMaker JumpStart** endpoint.
+**Secrets Manager or Systems Manager Parameter Store** would hold the Gemini API key, so it is never in the code or the repository.
 
-### D. Chat Front-End: Amazon Lex (Optional)
-* Amazon Lex can be configured as a voice/text conversational front-end that routes intents directly to the FastAPI API Gateway endpoint.
+**Amazon Bedrock** is an alternative to calling Gemini. The model providers share one interface, so using Bedrock means adding one new provider file and giving the Lambda role permission to call it. This keeps requests inside AWS.
 
----
+**SageMaker** would matter if I hosted my own model or trained one. This project uses hosted models, so I do not need it. I mention it because the role works with it, and I would reach for it if the data or the model grew into something custom.
 
-## 3. Local vs Cloud Cost Comparison
+**Amazon Lex** could be a chat front end, for example for a voice or messaging channel. Lex would hand the user's text to a Lambda that calls `POST /api/ask` and returns the answer.
 
-| Component | AWS Equivalent | Estimated Monthly Cost (Low-Volume) |
-|---|---|---|
-| In-Process SQLite | Amazon Aurora Serverless / RDS PostgreSQL | ~$0.00 – $15.00 / month |
-| FastAPI Server | AWS Lambda + API Gateway | Free Tier eligible (< 1M requests) |
-| Local CSV | Amazon S3 Standard | < $0.05 / month |
-| Gemini Flash | Amazon Bedrock (Pay-per-token) | ~$0.50 – $2.00 / month |
-| **Total** | | **<$20 / month** |
+**CloudWatch** collects logs and metrics from Lambda. I would watch error rates, response times and how often questions are refused.
+
+**IAM** gives the Lambda role only the permissions it needs: read one S3 object, read one secret, write logs.
+
+## Steps I would follow
+
+1. Create an S3 bucket and upload the CSV.
+2. Change the loader so it can read from S3 as well as from disk, chosen by an environment variable.
+3. Store the Gemini key in Secrets Manager.
+4. Package the app with its dependencies, or build the container image, and create the Lambda function.
+5. Set `LLM_MODEL` and the S3 location as environment variables.
+6. Create an API Gateway HTTP API that forwards all routes to the function.
+7. Open the API URL, check the page loads, and ask the five example questions.
+8. Check CloudWatch for errors.
+
+![Deployed app screenshot](images/18-aws-deployed.png)
+*Only add this if I actually deploy it. A screenshot of the app running on its AWS URL.*
+
+## Things I would check before calling it production-ready
+
+- Cold start time, because the database is built when an instance starts.
+- Request limits and authentication on the API, because there are none yet.
+- The size of the packaged dependencies against Lambda's limits. If it is too large, the container route is the alternative.
+- Cost: Lambda and API Gateway charge per request, so an idle app costs almost nothing, but model calls would be the main cost.
