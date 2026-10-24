@@ -1,51 +1,41 @@
-# System Limitations & Candid Scope Boundaries
+# Known Limitations
 
-In accordance with professional engineering standards, this document outlines what works, what does not work, and the rationale behind each technical boundary.
+I would rather be clear about what the project does not do than leave it for someone to discover.
 
----
+## What works
 
-## 1. What Works (Fully Tested & Verified)
+- Loading the CSV, separating clean rows from problem rows, and recording the reason for each.
+- All five example questions, with the SQL and the supporting figures shown.
+- An explanation of what drove a change between two months.
+- Independent cross-checking of the standard questions in Pandas.
+- Refusal of destructive requests and of questions the data cannot answer.
+- Running with no API key.
+- Automated tests for data loading, the verified figures, question interpretation, the SQL guard, the driver analysis and the API.
 
-* **Certified Lane A Metrics:**
-  - Total Net Revenue (₹14,39,200 default, ₹14,58,200 with returns).
-  - Top Product ranking (Monitor at ₹4,73,000, Desk at ₹2,22,500, etc.).
-  - Monthly trend series (Jan: ₹2.10L to peak May: ₹3.18L).
-  - Regional rankings (South at ₹4,11,200).
-  - Revenue change with driver analysis (March to April: +₹16,800 / +7.50%).
-  - Average Order Value (₹29,983.33 across 48 clean orders).
-  - Categories & Sales Channels breakdowns.
-  - Returns value (₹19,000 across 1 order, TXN0033).
-  - Discount impact (₹4,500 total, 0.31% of gross revenue).
-* **Dual-Engine Verification:**
-  - Every Lane A metric runs through both SQLite and an independent Pandas pipeline to verify arithmetic agreement.
-* **Red-Team Security Guard:**
-  - Rejects `DROP`, `DELETE`, `INSERT`, `UPDATE`, comments (`--`, `/* */`), stacked semicolons, and unknown columns.
-* **Data Quality Audit & Quarantine:**
-  - TXN0033 (returned), TXN0034 (quantity = 0), and TXN0051 (missing price) isolated into `sales_quarantine`.
-* **Zero-Key Execution:**
-  - Fully functional without any external LLM API key via the `RuleBasedProvider`.
+## What is limited, and why
 
----
+| Limitation | Why it exists |
+|---|---|
+| **The dataset is small.** There are 48 clean orders over six months, 8 a month. | That is the file I was given. Trends and rankings from so few orders are indicative, not statistically strong. |
+| **Open-ended questions need a Gemini key.** Without one, only the standard question types are understood. | The rule-based interpreter recognises known shapes of question. It is reliable on those and cannot guess at new ones. |
+| **The cross-check is strongest for standard questions.** | I can recompute my own queries independently. For SQL written by the model I validate and show it, but I cannot independently recompute every possible query. |
+| **The model can misread a question.** | Language models sometimes do. That is why the interpretation is shown, the SQL is visible, and an unclear question is refused instead of guessed. |
+| **Advice-style questions are not answered.** For example, "which products should I improve to increase sales?" | The app reports and explains what the data shows. Recommendations need judgement the data alone does not support, and I did not have time to build and test it. |
+| **No forecasting.** | Six months of data cannot support a reliable prediction, so the app says so. |
+| **No cost, margin or customer data.** | The file has none, so questions about profit or customers cannot be answered. |
+| **Currency is assumed to be rupees.** | The file has no currency column. |
+| **The order with a missing price is left out.** TXN0051, a Laptop Stand order in June, is not counted. | I will not invent a price. June revenue is therefore slightly understated. |
+| **Returned orders are excluded from revenue by default.** | I treated a returned order as revenue that did not stay. It can be included with an option. |
+| **Dates are read as day-month-year.** | That is what the file uses. A file in another format would be misread. |
+| **One user at a time, no login, no rate limiting.** | This is a challenge project, not a production system. |
+| **The database is rebuilt from the CSV every time the app starts.** | It keeps the project simple and consistent. It would not suit large or changing data. |
+| **Not deployed to AWS.** | The design is in [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md). I did not deploy it. |
+| **No automated pipeline yet.** | Tests are run by hand with `python -m pytest`. |
 
-## 2. What Does Not Work (By Design or Scope Constraints)
+## Testing limits
 
-1. **Speculative Future Forecasting:**
-   - *Example Query:* "Predict what our revenue will be next December."
-   - *Why:* The dataset contains historical records from January to June 2026. Without time-series econometric models (ARIMA/Prophet) or external macro drivers, an LLM generating arbitrary future revenue figures would constitute hallucination. The system politely refuses and directs the user to historical trends.
-2. **Arbitrary File Upload in UI:**
-   - *Why:* The scope specifies analyzing `ai_bi_assistant_sales_data_-_GET.csv`. Dynamically accepting unseen schemas requires dynamic column mapping and dynamic metric registry generation, which exceeds a 3–4 hour scope.
-3. **Multi-Turn Pronoun Resolution Across Distant Turns:**
-   - *Example Query:* "And what about the other one from earlier?"
-   - *Why:* We support immediate follow-ups based on the previous query parameters, but we do not maintain a persistent conversational graph across long sessions.
-4. **Direct DDL / Administrative Operations:**
-   - *Example Query:* "Create a new table for customers."
-   - *Why:* The system is strictly a read-only analytics assistant. Administrative or modifying commands are permanently blocked by the AST SQL Guard.
+The automated tests are designed to run without an API key, so they cover the rule-based path and the SQL guard. The live Gemini path needs a key and a connection, so it is checked by hand.
 
----
+## What I would do next
 
-## 3. Known Trade-Offs
-
-* **SQLite File-Based Locking:**
-  - While ideal for single-node deployments and fast local execution, SQLite does not support high-concurrency multi-master writes. For multi-tenant production systems, migration to PostgreSQL is recommended.
-* **Vectorless RAG Keyword Coverage:**
-  - Vectorless RAG is deterministic and requires 0 API keys, but relies on terms defined in `knowledge/glossary.json`. If a user uses an unmapped synonym (e.g., "boodle" for revenue), it routes to Lane B rather than Lane A.
+See "What I would improve with another day of work" in [AI_USAGE.md](AI_USAGE.md).
